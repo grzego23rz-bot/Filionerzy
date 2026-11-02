@@ -135,4 +135,53 @@ function life5050(){if(gameLock||!gameQuestion)return;let n=activePerson();if(ga
 function finishGame(){micWanted=false;stopMic();stopTimer();let rank=game.names.map(name=>({name,score:game.scores[name]})).sort((a,b)=>b.score-a.score);localStorage.setItem('filionerzyRanking',JSON.stringify(rank));let top=rank.filter(p=>p.score===rank[0].score).map(p=>p.name);$('winnerTitle').textContent=top.length===1?'ZWYCIĘŻA '+top[0].toUpperCase()+'!':'REMIS: '+top.join(' I ').toUpperCase()+'!';$('finalRows').innerHTML=rank.map((p,i)=>`<div class="rank"><b>${i+1}. ${safeText(p.name)}</b><strong>${p.score} pkt</strong></div>`).join('');screen('final');burst('🏆','💎','🎉','⭐');speak('Koniec gry! '+(top.length===1?'Zwycięża '+top[0]:'Mamy remis')+'!')}
 function confirmExit(){modal('<h2>🏠 WRÓCIĆ DO MENU?</h2><p>Aktualna rozgrywka zostanie przerwana.</p><button class="pixel red" onclick="exitGame()">TAK, ZAKOŃCZ GRĘ</button><button class="pixel green" onclick="closeModal()">WRÓĆ DO PYTANIA</button>')}
 function exitGame(){micWanted=false;stopMic();stopTimer();if(musicInterval){clearInterval(musicInterval);musicInterval=null}closeModal();try{speechSynthesis.cancel()}catch(e){}game=null;screen('menu')}
+</script><style>
+#remoteFab{position:fixed;right:12px;bottom:12px;z-index:9000;background:#ffdb4c;color:#211343;border:3px solid #fff;border-radius:12px;font-weight:900;padding:12px;cursor:pointer}
+#remotePanel{position:fixed;z-index:9001;top:12px;right:12px;width:min(360px,calc(100vw - 24px));max-height:85vh;overflow:auto;padding:16px;border:4px solid #ffdb4c;border-radius:16px;background:#211343;color:white;box-shadow:0 10px 40px #0009;font:16px system-ui}
+#remotePanel button,#pilotApp button{background:#ffdb4c;color:#211343;border:2px solid #fff;border-radius:9px;padding:12px;font-weight:900;cursor:pointer;margin:4px}
+#remotePanel .code{font-size:40px;letter-spacing:6px;color:#ffdb4c;font-weight:900;text-align:center}
+#pilotApp{position:fixed;z-index:99999;inset:0;background:linear-gradient(#23164e,#0c1738);color:white;padding:20px;overflow:auto;font:18px system-ui;text-align:center}
+#pilotApp input{font-size:30px;letter-spacing:5px;width:200px;text-align:center;padding:12px;border-radius:10px}
+#pilotApp .pilotGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:500px;margin:20px auto}
+#pilotApp .pilotGrid button{min-height:80px;font-size:24px}
+#pilotApp .pilotActions{display:flex;flex-wrap:wrap;justify-content:center;max-width:560px;margin:auto}
+#pilotApp .pilotActions button{font-size:16px;min-height:52px}
+</style>
+<button id="remoteFab" onclick="FILRemote.toggleHost()">📺 POŁĄCZ PILOTA</button>
+<div id="remotePanel" hidden><button onclick="FILRemote.hideHost()" style="float:right">✕</button><h2>📺 FILIONERZY — TELEWIZOR</h2><div id="hostMessage">Utwórz pokój, aby połączyć telefon.</div><div class="code" id="hostCode"></div><div id="hostRequests"></div><button id="hostCreate" onclick="FILRemote.createHost()">UTWÓRZ POKÓJ</button><p style="font-size:13px">Na telefonie otwórz ten sam adres z końcówką <b>?pilot=1</b>.</p></div>
+<div id="pilotApp" hidden><h1>🎮 FILIONERZY</h1><h2>📱 PILOT</h2><div id="pilotLogin"><p>Wpisz sześciocyfrowy kod z telewizora:</p><input id="pilotCode" inputmode="numeric" maxlength="6" placeholder="000000"><p><button onclick="FILRemote.joinPilot()">POŁĄCZ Z TV</button></p></div><div id="pilotStatus"></div><div id="pilotControls" hidden><div class="pilotGrid"><button onclick="FILRemote.send('A')">🅰️ A</button><button onclick="FILRemote.send('B')">🅱️ B</button><button onclick="FILRemote.send('C')">🇨 C</button><button onclick="FILRemote.send('D')">🇩 D</button></div><div class="pilotActions"><button onclick="FILRemote.send('CONFIRM')">✅ POTWIERDZAM</button><button onclick="FILRemote.send('CHANGE')">🔄 ZMIENIAM</button></div><h3>Koła ratunkowe</h3><div class="pilotActions"><button onclick="FILRemote.send('LIFELINE_5050')">💎 50:50</button><button onclick="FILRemote.send('LIFELINE_AUDIENCE')">👥 PUBLICZNOŚĆ</button><button onclick="FILRemote.send('LIFELINE_PHONE')">📞 TELEFON</button></div><p style="font-size:13px">Głosowanie publiczności i wybór przyjaciela obsługuj na ekranie telewizora.</p></div><p><a href="?" style="color:#ffdb4c">Wróć do gry</a></p></div>
+<script>
+(function(){
+const API='https://wphgyimjbnlnzhwpakmw.supabase.co/rest/v1/rpc/';
+const KEY='sb_publishable_zU7T-Y1klhyUpaRywWhLGg__uc_x1NG';
+const el=id=>document.getElementById(id);
+let host=null,pilot=null,lastId=0,hostTimer=null,pilotTimer=null,busyHost=false,busyPilot=false;
+const hostStore='filionerzy_tv_room_v1',pilotStore='filionerzy_phone_pilot_v1';
+function save(k,v){sessionStorage.setItem(k,JSON.stringify(v))}
+function load(k){try{return JSON.parse(sessionStorage.getItem(k))}catch(e){return null}}
+async function rpc(name,body){const r=await fetch(API+name,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify(body||{})});let d=await r.json().catch(()=>null);if(!r.ok)throw Error(d?.message||'Błąd połączenia ('+r.status+')');return d}
+function message(id,t){el(id).textContent=t}
+function err(e,id){message(id,'⚠ '+e.message)}
+function showHost(){el('remotePanel').hidden=false; if(host){el('hostCode').textContent=host.room_code;el('hostCreate').hidden=true;message('hostMessage','Pokój działa. Czekam na telefon...')} }
+function hideHost(){el('remotePanel').hidden=true}
+async function createHost(){el('hostCreate').disabled=true;try{host=await rpc('filionerzy_create_room',{});lastId=0;save(hostStore,host);showHost();startHost()}catch(e){err(e,'hostMessage');el('hostCreate').disabled=false}}
+async function hostTick(){if(!host||busyHost)return;busyHost=true;try{
+const reqs=await rpc('filionerzy_pending_pilots',{p_room_code:host.room_code,p_host_token:host.host_token});
+const holder=el('hostRequests');holder.replaceChildren();for(const req of (reqs||[])){const b=document.createElement('button');b.textContent='✅ ZATWIERDŹ TELEFON ('+new Date(req.created_at).toLocaleTimeString('pl-PL')+')';b.onclick=async()=>{b.disabled=true;try{await rpc('filionerzy_approve_pilot',{p_room_code:host.room_code,p_host_token:host.host_token,p_request_id:req.request_id});message('hostMessage','Pilot zatwierdzony!');await hostTick()}catch(e){err(e,'hostMessage')}};holder.appendChild(b)}
+const cmds=await rpc('filionerzy_get_commands',{p_room_code:host.room_code,p_host_token:host.host_token,p_after_id:lastId});for(const c of cmds||[]){lastId=Math.max(lastId,Number(c.id));execute(c.command)}
+}catch(e){err(e,'hostMessage')}finally{busyHost=false}}
+function startHost(){if(hostTimer)clearInterval(hostTimer);hostTick();hostTimer=setInterval(hostTick,900)}
+function execute(cmd){try{if(['A','B','C','D'].includes(cmd)){if(typeof chooseAnswer==='function'&&el('game')&&!el('game').classList.contains('hidden'))chooseAnswer('ABCD'.indexOf(cmd));return}
+if(cmd==='CONFIRM'){if(typeof micChoice!=='undefined'&&micChoice!==null&&typeof confirmAnswer==='function')confirmAnswer(micChoice);else {const btn=document.querySelector('#modalLayer button[onclick*="confirmAnswer"]');if(btn)btn.click()}return}
+if(cmd==='CHANGE'){if(typeof gameLock!=='undefined'&&gameLock&&typeof micChoice!=='undefined'&&micChoice!==null){if(typeof cancelAnswer==='function')cancelAnswer()}return}
+if(cmd==='LIFELINE_5050'&&typeof life5050==='function')life5050();if(cmd==='LIFELINE_AUDIENCE'&&typeof lifeAudience==='function')lifeAudience();if(cmd==='LIFELINE_PHONE'&&typeof lifePhone==='function')lifePhone();
+}catch(e){console.warn('FILIONERZY remote:',e)}}
+async function joinPilot(){const code=el('pilotCode').value.trim();if(!/^\d{6}$/.test(code)){message('pilotStatus','Wpisz 6 cyfr kodu.');return}message('pilotStatus','Wysyłam prośbę o zatwierdzenie...');try{pilot=await rpc('filionerzy_request_pilot',{p_room_code:code});pilot.room_code=code;save(pilotStore,pilot);el('pilotLogin').hidden=true;startPilot()}catch(e){err(e,'pilotStatus')}}
+async function pilotTick(){if(!pilot||busyPilot||pilot.pilot_token)return;busyPilot=true;try{const res=await rpc('filionerzy_claim_pilot',{p_request_id:pilot.request_id,p_request_token:pilot.request_token});if(res.status==='pending'){message('pilotStatus','⏳ Czekam na zatwierdzenie na telewizorze...')}else if(res.status==='connected'){pilot.pilot_token=res.pilot_token;save(pilotStore,pilot);showConnected()}else{message('pilotStatus','⚠ '+res.status+'. Odśwież stronę i zgłoś telefon ponownie.');clearInterval(pilotTimer)}}catch(e){err(e,'pilotStatus')}finally{busyPilot=false}}
+function showConnected(){el('pilotLogin').hidden=true;el('pilotControls').hidden=false;message('pilotStatus','🟢 POŁĄCZONO Z TV · POKÓJ '+pilot.room_code);if(pilotTimer)clearInterval(pilotTimer)}
+function startPilot(){if(pilot.pilot_token){showConnected();return}pilotTick();pilotTimer=setInterval(pilotTick,1500)}
+async function send(command){if(!pilot?.pilot_token)return;try{await rpc('filionerzy_send_command',{p_room_code:pilot.room_code,p_pilot_token:pilot.pilot_token,p_command:command});message('pilotStatus','🟢 Wysłano: '+command)}catch(e){err(e,'pilotStatus')}}
+window.FILRemote={toggleHost:()=>el('remotePanel').hidden?showHost():hideHost(),hideHost,createHost,joinPilot,send};
+if(new URLSearchParams(location.search).get('pilot')==='1'){el('pilotApp').hidden=false;el('remoteFab').hidden=true;pilot=load(pilotStore);if(pilot)startPilot()}else{host=load(hostStore);if(host){showHost();startHost()}}
+})();
 </script></body></html>
