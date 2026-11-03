@@ -249,8 +249,8 @@ function exitGame(){micWanted=false;stopMic();stopTimer();if(musicInterval){clea
 #pilotApp .pilotActions button{font-size:16px;min-height:52px}
 </style>
 <button id="remoteFab" onclick="FILRemote.toggleHost()">📺 POŁĄCZ PILOTA</button>
-<div id="remotePanel" hidden><button onclick="FILRemote.hideHost()" style="float:right">✕</button><h2>📺 FILIONERZY — TELEWIZOR</h2><div id="hostMessage">Utwórz pokój, aby połączyć telefon.</div><div class="code" id="hostCode"></div><div id="hostRequests"></div><button id="hostCreate" onclick="FILRemote.createHost()">UTWÓRZ POKÓJ</button><p style="font-size:13px">Na telefonie otwórz ten sam adres z końcówką <b>?pilot=1</b>.</p></div>
-<div id="pilotApp" hidden><h1>🎮 FILIONERZY</h1><h2>📱 PILOT</h2><div id="pilotLogin"><p>Wpisz sześciocyfrowy kod z telewizora:</p><input id="pilotCode" inputmode="numeric" maxlength="6" placeholder="000000"><p><button onclick="FILRemote.joinPilot()">POŁĄCZ Z TV</button></p></div><div id="pilotStatus"></div><div id="pilotControls" hidden><div class="pilotGrid"><button onclick="FILRemote.send('A')">🅰️ A</button><button onclick="FILRemote.send('B')">🅱️ B</button><button onclick="FILRemote.send('C')">🇨 C</button><button onclick="FILRemote.send('D')">🇩 D</button></div><div class="pilotActions"><button onclick="FILRemote.send('CONFIRM')">✅ POTWIERDZAM</button><button onclick="FILRemote.send('CHANGE')">🔄 ZMIENIAM</button></div><h3>Koła ratunkowe</h3><div class="pilotActions"><button onclick="FILRemote.send('LIFELINE_5050')">💎 50:50</button><button onclick="FILRemote.send('LIFELINE_AUDIENCE')">👥 PUBLICZNOŚĆ</button><button onclick="FILRemote.send('LIFELINE_PHONE')">📞 TELEFON</button></div><p style="font-size:13px">Głosowanie publiczności i wybór przyjaciela obsługuj na ekranie telewizora.</p></div><p><a href="?" style="color:#ffdb4c">Wróć do gry</a></p></div>
+<div id="remotePanel" hidden><button onclick="FILRemote.hideHost()" style="float:right">✕</button><h2>📺 FILIONERZY — TELEWIZOR</h2><div id="hostMessage">Utwórz pokój, aby połączyć telefon.</div><div class="code" id="hostCode"></div><div id="hostRequests"></div><button id="hostCreate" onclick="FILRemote.createHost()">UTWÓRZ POKÓJ</button><button onclick="window.testZofiaOnTV&&window.testZofiaOnTV()">🔊 TEST GŁOSU ZOFII</button><p id="zofiaCheck" style="font-size:14px"></p><p style="font-size:13px">Na telefonie otwórz <b>grzego23rz-bot.github.io/Filionerzy/?pilot=1</b> i wpisz kod z telewizora.</p></div>
+<a id="pilotShortcut" href="?pilot=1" style="position:fixed;right:12px;bottom:12px;z-index:9999;padding:13px;background:#ffdb4c;color:#211343;border:2px solid white;border-radius:12px;font:bold 15px system-ui;text-decoration:none">📱 PILOT – WPISZ KOD TV</a><div id="pilotApp" hidden><h1>🎮 FILIONERZY</h1><h2>📱 PILOT</h2><div id="pilotLogin"><p>Wpisz sześciocyfrowy kod z telewizora:</p><input id="pilotCode" inputmode="numeric" maxlength="6" placeholder="000000"><p><button onclick="FILRemote.joinPilot()">POŁĄCZ Z TV</button></p></div><div id="pilotStatus"></div><div id="pilotControls" hidden><div class="pilotGrid"><button onclick="FILRemote.send('A')">🅰️ A</button><button onclick="FILRemote.send('B')">🅱️ B</button><button onclick="FILRemote.send('C')">🇨 C</button><button onclick="FILRemote.send('D')">🇩 D</button></div><div class="pilotActions"><button onclick="FILRemote.send('CONFIRM')">✅ POTWIERDZAM</button><button onclick="FILRemote.send('CHANGE')">🔄 ZMIENIAM</button></div><h3>Koła ratunkowe</h3><div class="pilotActions"><button onclick="FILRemote.send('LIFELINE_5050')">💎 50:50</button><button onclick="FILRemote.send('LIFELINE_AUDIENCE')">👥 PUBLICZNOŚĆ</button><button onclick="FILRemote.send('LIFELINE_PHONE')">📞 TELEFON</button></div><p style="font-size:13px">Głosowanie publiczności i wybór przyjaciela obsługuj na ekranie telewizora.</p></div><p><a href="?" style="color:#ffdb4c">Wróć do gry</a></p></div>
 <script>
 (function(){
 const API='https://wphgyimjbnlnzhwpakmw.supabase.co/rest/v1/rpc/';
@@ -283,7 +283,7 @@ function showConnected(){el('pilotLogin').hidden=true;el('pilotControls').hidden
 function startPilot(){if(pilot.pilot_token){showConnected();return}pilotTick();pilotTimer=setInterval(pilotTick,1500)}
 async function send(command){if(!pilot?.pilot_token)return;try{await rpc('filionerzy_send_command',{p_room_code:pilot.room_code,p_pilot_token:pilot.pilot_token,p_command:command});message('pilotStatus','🟢 Wysłano: '+command)}catch(e){err(e,'pilotStatus')}}
 window.FILRemote={toggleHost:()=>el('remotePanel').hidden?showHost():hideHost(),hideHost,createHost,joinPilot,send};
-if(new URLSearchParams(location.search).get('pilot')==='1'){el('pilotApp').hidden=false;el('remoteFab').hidden=true;pilot=load(pilotStore);if(pilot)startPilot()}else{host=load(hostStore);if(host){showHost();startHost()}}
+if(new URLSearchParams(location.search).get('pilot')==='1'){el('pilotApp').hidden=false;el('remoteFab').hidden=true;el('pilotShortcut').hidden=true;pilot=load(pilotStore);if(pilot)startPilot()}else{host=load(hostStore);if(host){showHost();startHost()}}
 })();
 </script>
 <script>
@@ -303,16 +303,16 @@ if(new URLSearchParams(location.search).get('pilot')==='1'){el('pilotApp').hidde
 })();
 </script>
 <script id="filionerzy-zofia-bank" type="application/json"></script>
-<script src="nagrania_1.js"></script>
-<script src="nagrania_2.js"></script>
-<script src="nagrania_3.js"></script>
-<script src="nagrania_4.js"></script>
+<script src="nagrania_1.js" onerror="this.onerror=null;this.src='audio1.js'"></script>
+<script src="nagrania_2.js" onerror="this.onerror=null;this.src='audio2.js'"></script>
+<script src="nagrania_3.js" onerror="this.onerror=null;this.src='audio3.js'"></script>
+<script src="nagrania_4.js" onerror="this.onerror=null;this.src='audio4.js'"></script>
 <script>
 /* FILIONERZY ZOFIA: spójna kolejka nagrań, synchronizacja ze scenami. */
 (function(){
  'use strict';
- const voiceIds=Object.keys(JSON.parse(document.getElementById('filionerzy-zofia-bank').textContent));
- const keys=new Set(voiceIds);const audioBank=JSON.parse(document.getElementById('filionerzy-zofia-bank').textContent);
+ let audioBank={};try{audioBank=JSON.parse(document.getElementById('filionerzy-zofia-bank').textContent||'{}')}catch(e){console.error('Brak lub niepełne pliki nagrań Zofii',e)}
+ const voiceIds=Object.keys(audioBank);const keys=new Set(voiceIds);
  let queue=[],seq=0,active=null,after=null;
  function enabled(){return !!document.getElementById('voice')?.checked;}
  function stop(){seq++;queue=[];after=null;if(active){active.onended=null;active.onerror=null;active.pause();active.removeAttribute('src');active=null;}if(typeof micResume==='function')micResume();}
@@ -380,7 +380,14 @@ if(new URLSearchParams(location.search).get('pilot')==='1'){el('pilotApp').hidde
  const oldNext=showNext;
  showNext=function(){stop();oldNext();};
  // Test głośników TV z gotowego MP3, bez syntezy przeglądarkowej.
- window.testZofiaOnTV=function(){say('komunikat_powitanie');};
+ window.testZofiaOnTV=function(){
+ const e=document.getElementById('zofiaCheck');
+ if(!voiceIds.length){if(e)e.textContent='❌ Nie wczytano nagrań. Sprawdź pliki nagrania_1.js do nagrania_4.js (lub audio1.js do audio4.js).';return;}
+ if(e)e.textContent='✅ Wczytano '+voiceIds.length+' nagrań. Próba odtwarzania...';
+ const cb=document.getElementById('voice');if(cb)cb.checked=true;
+ say('komunikat_powitanie');
+ };
+ const voiceInfo=document.getElementById('zofiaCheck');if(voiceInfo)voiceInfo.textContent=voiceIds.length?'🎙 Wczytano '+voiceIds.length+' nagrań Zofii':'⚠ Brak nagrań Zofii. Sprawdź cztery pliki audio na GitHubie.';
  const settings=document.getElementById('settings');if(settings){const b=document.createElement('button');b.className='pixel green small';b.textContent='🎤 TEST ZOFII NA TELEWIZORZE';b.onclick=window.testZofiaOnTV;settings.appendChild(b);}
 })();
 </script>
