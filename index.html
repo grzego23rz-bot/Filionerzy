@@ -273,10 +273,11 @@ const cmds=await rpc('filionerzy_get_commands',{p_room_code:host.room_code,p_hos
 }catch(e){err(e,'hostMessage')}finally{busyHost=false}}
 function startHost(){if(hostTimer)clearInterval(hostTimer);hostTick();hostTimer=setInterval(hostTick,900)}
 function execute(cmd){try{
-if(/^AUD_VOTE_[0-3]$/.test(cmd)){if(typeof audienceCast==='function'&&typeof audienceState!=='undefined'&&audienceState)audienceCast(Number(cmd.slice(-1)));return}
+if(/^AUD_VOTE_[0-3]$/.test(cmd)){if(typeof audienceCast==='function'){if(!audienceState&&typeof lifeAudience==='function')lifeAudience();if(audienceState)audienceCast(Number(cmd.slice(-1)));}return}
+if(cmd==='AUD_RESULTS'){if(typeof audienceResults==='function'&&audienceState&&audienceState.votes.length>=4){if(typeof audienceTimer!=='undefined'&&audienceTimer){clearInterval(audienceTimer);audienceTimer=null;}audienceResults();}return}
 if(cmd==='AUD_NEXT'){if(typeof audienceVoteScreen==='function'&&typeof audienceState!=='undefined'&&audienceState)audienceVoteScreen();return}
 if(/^PHONE_PICK_[0-7]$/.test(cmd)){if(typeof chooseFriend==='function')chooseFriend(Number(cmd.slice(-1)));return}
-if(cmd==='PHONE_START'){if(typeof phoneStart==='function')phoneStart();return}
+if(cmd==='PHONE_START'){if(typeof phoneStart==='function'&&phoneFriend)phoneStart();return}
 if(['A','B','C','D'].includes(cmd)){if(typeof chooseAnswer==='function'&&el('game')&&!el('game').classList.contains('hidden'))chooseAnswer('ABCD'.indexOf(cmd));return}
 if(cmd==='CONFIRM'){if(typeof micChoice!=='undefined'&&micChoice!==null&&typeof confirmAnswer==='function')confirmAnswer(micChoice);else {const btn=document.querySelector('#modalLayer button[onclick*="confirmAnswer"]');if(btn)btn.click()}return}
 if(cmd==='CHANGE'){if(typeof gameLock!=='undefined'&&gameLock&&typeof micChoice!=='undefined'&&micChoice!==null){if(typeof cancelAnswer==='function')cancelAnswer()}return}
@@ -293,15 +294,29 @@ function closeLife(){el('pilotLifePanel').hidden=true}
 function getPhoneNumbers(){try{return JSON.parse(localStorage.getItem('filionerzyFriends')||'{}')}catch(e){return {}}}
 function savePhoneNumbers(){const obj={};remoteFriends.forEach((n,i)=>obj[n]=(el('remoteFriend'+i)?.value||'').trim());localStorage.setItem('filionerzyFriends',JSON.stringify(obj));message('pilotStatus','✅ Numery zapisane w tym telefonie');openPhone()}
 function phoneSettings(){const saved=getPhoneNumbers();lifePanel('📒 KSIĄŻKA TELEFONICZNA',remoteFriends.map((n,i)=>'<label style="display:block;margin:8px">'+n+'<input style="width:100%;font-size:19px;padding:9px" type="tel" id="remoteFriend'+i+'" value="'+String(saved[n]||'').replace(/[^+0-9 ()-]/g,'')+'" placeholder="Wpisz numer"></label>').join('')+'<button onclick="FILRemote.savePhoneNumbers()">💾 ZAPISZ NUMERY</button>')}
-function openPhone(){send('LIFELINE_PHONE');const saved=getPhoneNumbers();lifePanel('📞 TELEFON DO PRZYJACIELA','<p>Wybierz osobę. Połączenie wykonasz z tego telefonu.</p>'+remoteFriends.map((n,i)=>'<button style="display:block;width:100%;margin:6px 0" onclick="FILRemote.callFriend('+i+')">📞 '+n+(saved[n]?' ✓':' — brak numeru')+'</button>').join('')+'<button onclick="FILRemote.phoneSettings()">⚙️ WPISZ / ZMIEŃ NUMERY</button>')}
-async function callFriend(i){const n=remoteFriends[i],number=String(getPhoneNumbers()[n]||'').replace(/[^+0-9]/g,'');if(!/^\+?\d{6,15}$/.test(number)){phoneSettings();message('pilotStatus','Najpierw wpisz numer osoby: '+n);return}await send('PHONE_PICK_'+i);lifePanel('📞 '+n,'<p>Dotknij przycisku, żeby otworzyć aplikację telefonu.</p><a style="display:block;padding:16px;background:#19844b;color:white;font-weight:bold;border-radius:12px;margin:12px" href="tel:'+number+'">📞 ZADZWOŃ</a><button onclick="FILRemote.startPhoneTimer()">▶ ROZMOWA ROZPOCZĘTA — 30 S</button><p>Po zakończeniu połączenia wróć do przeglądarki.</p>')}
-function startPhoneTimer(){send('PHONE_START');let sec=30;lifePanel('⏱️ CZAS ROZMOWY','<h1 id="phoneTimerMobile">00:30</h1><p>Połączenie odbywa się w aplikacji telefonu.</p>');const timer=setInterval(()=>{sec--;const t=el('phoneTimerMobile');if(!t){clearInterval(timer);return}t.textContent='00:'+String(Math.max(sec,0)).padStart(2,'0');if(sec<=0){clearInterval(timer);t.textContent='⏰ KONIEC CZASU'}},1000)}
+function openPhone(){const saved=getPhoneNumbers();lifePanel('📞 TELEFON DO PRZYJACIELA','<p>Wybierz osobę. Połączenie wykonasz z tego telefonu.</p>'+remoteFriends.map((n,i)=>'<button style="display:block;width:100%;margin:6px 0" onclick="FILRemote.callFriend('+i+')">📞 '+n+(saved[n]?' ✓':' — brak numeru')+'</button>').join('')+'<button onclick="FILRemote.phoneSettings()">⚙️ WPISZ / ZMIEŃ NUMERY</button>')}
+let selectedPhoneFriend=-1;
+async function callFriend(i){selectedPhoneFriend=i;const n=remoteFriends[i],number=String(getPhoneNumbers()[n]||'').replace(/[^+0-9]/g,'');if(!/^\+?\d{6,15}$/.test(number)){phoneSettings();message('pilotStatus','Najpierw wpisz numer osoby: '+n);return}lifePanel('📞 '+n,'<p>Dotknij przycisku, żeby otworzyć aplikację telefonu.</p><a style="display:block;padding:16px;background:#19844b;color:white;font-weight:bold;border-radius:12px;margin:12px" href="tel:'+number+'">📞 ZADZWOŃ</a><button onclick="FILRemote.startPhoneTimer()">▶ ROZMOWA ROZPOCZĘTA — 30 S</button><p>Po zakończeniu połączenia wróć do przeglądarki.</p>')}
+function startPhoneTimer(){send('LIFELINE_PHONE').then(()=>send('PHONE_PICK_'+selectedPhoneFriend)).then(()=>send('PHONE_START')); let sec=30;lifePanel('⏱️ CZAS ROZMOWY','<h1 id="phoneTimerMobile">00:30</h1><p>Połączenie odbywa się w aplikacji telefonu.</p>');const timer=setInterval(()=>{sec--;const t=el('phoneTimerMobile');if(!t){clearInterval(timer);return}t.textContent='00:'+String(Math.max(sec,0)).padStart(2,'0');if(sec<=0){clearInterval(timer);t.textContent='⏰ KONIEC CZASU'}},1000)}
 let voteStep=0;
-function openAudience(){voteStep=0;send('LIFELINE_AUDIENCE');showVote()}
+async function openAudience(){voteStep=0;await send('LIFELINE_AUDIENCE');showVote()}
 function showVote(){lifePanel('👥 GŁOSOWANIE PUBLICZNOŚCI','<p>Głos '+(voteStep+1)+' z 4. Pytanie i odpowiedzi zobacz na telewizorze. Przekaż telefon głosującemu.</p><div class="pilotGrid">'+['A','B','C','D'].map((v,i)=>'<button onclick="FILRemote.castVote('+i+')">'+v+'</button>').join('')+'</div>')}
-async function castVote(i){await send('AUD_VOTE_'+i);voteStep++;if(voteStep<4){lifePanel('🔒 GŁOS ZAPISANY','<p>Nie pokazuj poprzedniej odpowiedzi. Przekaż telefon następnej osobie.</p><button onclick="FILRemote.nextVoter()">▶ NASTĘPNA OSOBA ('+(voteStep+1)+'/4)</button>')}else{lifePanel('📊 WYNIKI','<p>Wszystkie cztery głosy wysłane. Wyniki zostaną wyświetlone na telewizorze.</p>')}}
-function nextVoter(){send('AUD_NEXT');showVote()}
-window.FILRemote={toggleHost:()=>el('remotePanel').hidden?showHost():hideHost(),hideHost,createHost,joinPilot,send,openPhone,phoneSettings,savePhoneNumbers,callFriend,startPhoneTimer,openAudience,castVote,nextVoter,closeLife};
+async function castVote(i){await send('AUD_VOTE_'+i);voteStep++;if(voteStep<4){lifePanel('🔒 GŁOS ZAPISANY','<p>Nie pokazuj poprzedniej odpowiedzi. Przekaż telefon następnej osobie.</p><button onclick="FILRemote.nextVoter()">▶ NASTĘPNA OSOBA ('+(voteStep+1)+'/4)</button>')}else{await send('AUD_RESULTS');lifePanel('📊 WYNIKI','<p>Oddano cztery głosy. Wyniki powinny pojawić się na telewizorze.</p>')}}
+function nextVoter(){showVote()}
+let remoteRec=null,remoteMicOn=false,remoteMicActive=false;
+const RemoteSpeech=window.SpeechRecognition||window.webkitSpeechRecognition;
+function micStatus(t){message('pilotMicStatus',t)}
+function toggleMic(){if(remoteMicOn){remoteMicOn=false;try{remoteRec?.stop()}catch(e){}el('pilotMicButton').textContent='🎤 WŁĄCZ MIKROFON';micStatus('Mikrofon wyłączony.');return}
+ if(!RemoteSpeech){micStatus('⚠ Rozpoznawanie mowy nie jest obsługiwane. Otwórz pilot w Chrome na Androidzie.');return}
+ if(!window.isSecureContext){micStatus('⚠ Mikrofon wymaga strony HTTPS.');return}
+ remoteMicOn=true;el('pilotMicButton').textContent='⏹ WYŁĄCZ MIKROFON';remoteRec=new RemoteSpeech();remoteRec.lang='pl-PL';remoteRec.continuous=false;remoteRec.interimResults=false;
+ remoteRec.onresult=async e=>{const raw=e.results?.[0]?.[0]?.transcript||'';const t=raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,' ').trim();micStatus('🎤 Usłyszałem: '+raw);let command=null;const match=t.match(/(?:zaznacz|wybierz|odpowiedz|wybieram|stawiam na)?\s*(?:odpowiedz\s*)?\b([abcd])\b/);if(/\b(potwierdzam|zatwierdzam)\b/.test(t))command='CONFIRM';else if(/\b(zmieniam|anuluj)\b/.test(t))command='CHANGE';else if(match)command=match[1].toUpperCase();if(command)await send(command);else micStatus('Nie rozpoznano komendy: '+raw)};
+ remoteRec.onerror=e=>{micStatus('⚠ Mikrofon: '+(e.error||'błąd')+'. Sprawdź uprawnienia Chrome.');if(['not-allowed','service-not-allowed','network'].includes(e.error)){remoteMicOn=false;el('pilotMicButton').textContent='🎤 WŁĄCZ MIKROFON'}};
+ remoteRec.onend=()=>{remoteMicActive=false;if(remoteMicOn)setTimeout(()=>{if(remoteMicOn)try{remoteRec.start()}catch(e){}},500)};
+ try{remoteRec.start()}catch(e){micStatus('⚠ Nie można uruchomić mikrofonu: '+e.message)}
+ micStatus('🎤 Słucham. Powiedz: zaznacz A.');
+}
+window.FILRemote={toggleHost:()=>el('remotePanel').hidden?showHost():hideHost(),hideHost,createHost,joinPilot,send,openPhone,phoneSettings,savePhoneNumbers,callFriend,startPhoneTimer,openAudience,castVote,nextVoter,closeLife,toggleMic};
 if(new URLSearchParams(location.search).get('pilot')==='1'){el('pilotApp').hidden=false;el('remoteFab').hidden=true;el('pilotShortcut').hidden=true;pilot=load(pilotStore);if(pilot)startPilot()}else{host=load(hostStore);if(host){showHost();startHost()}}
 })();
 </script>
