@@ -248,9 +248,9 @@ function exitGame(){micWanted=false;stopMic();stopTimer();if(musicInterval){clea
 #pilotApp .pilotActions{display:flex;flex-wrap:wrap;justify-content:center;max-width:560px;margin:auto}
 #pilotApp .pilotActions button{font-size:16px;min-height:52px}
 </style>
-<button id="remoteFab" onclick="FILRemote.toggleHost()">📺 POŁĄCZ PILOTA</button>
+<button id="remoteFab" onclick="FILRemote.toggleHost()">📺 UTWÓRZ POKÓJ / POŁĄCZ TELEFON</button>
 <div id="remotePanel" hidden><button onclick="FILRemote.hideHost()" style="float:right">✕</button><h2>📺 FILIONERZY — TELEWIZOR</h2><div id="hostMessage">Utwórz pokój, aby połączyć telefon.</div><div class="code" id="hostCode"></div><div id="hostRequests"></div><button id="hostCreate" onclick="FILRemote.createHost()">UTWÓRZ POKÓJ</button><button onclick="window.testZofiaOnTV&&window.testZofiaOnTV()">🔊 TEST GŁOSU ZOFII</button><p id="zofiaCheck" style="font-size:14px"></p><p style="font-size:13px">Na telefonie otwórz <b>grzego23rz-bot.github.io/Filionerzy/?pilot=1</b> i wpisz kod z telewizora.</p></div>
-<a id="pilotShortcut" href="?pilot=1" style="position:fixed;right:12px;bottom:12px;z-index:9999;padding:13px;background:#ffdb4c;color:#211343;border:2px solid white;border-radius:12px;font:bold 15px system-ui;text-decoration:none">📱 PILOT – WPISZ KOD TV</a><div id="pilotApp" hidden><h1>🎮 FILIONERZY</h1><h2>📱 PILOT</h2><div id="pilotLogin"><p>Wpisz sześciocyfrowy kod z telewizora:</p><input id="pilotCode" inputmode="numeric" maxlength="6" placeholder="000000"><p><button onclick="FILRemote.joinPilot()">POŁĄCZ Z TV</button></p></div><div id="pilotStatus"></div><div id="pilotControls" hidden><div class="pilotGrid"><button onclick="FILRemote.send('A')">🅰️ A</button><button onclick="FILRemote.send('B')">🅱️ B</button><button onclick="FILRemote.send('C')">🇨 C</button><button onclick="FILRemote.send('D')">🇩 D</button></div><div style="margin:12px"><button id="pilotMicBtn" onclick="FILRemote.toggleMic()" style="width:90%;background:#20b66b;color:white;font-size:21px">🎤 WŁĄCZ MIKROFON</button><p id="pilotMicStatus" style="font-size:14px">Powiedz: odpowiedź A, B, C lub D</p></div><div class="pilotActions"><button onclick="FILRemote.send('CONFIRM')">✅ POTWIERDZAM</button><button onclick="FILRemote.send('CHANGE')">🔄 ZMIENIAM</button></div><h3>Koła ratunkowe</h3><div class="pilotActions"><button onclick="FILRemote.send('LIFELINE_5050')">💎 50:50</button><button onclick="FILRemote.openAudience()">👥 PUBLICZNOŚĆ</button><button onclick="FILRemote.openPhone()">📞 TELEFON</button></div><div id="pilotLifePanel" hidden style="margin:18px auto;padding:15px;max-width:560px;border:3px solid #ffdb4c;border-radius:15px;background:#241444"><h2 id="pilotLifeTitle"></h2><div id="pilotLifeBody"></div><button onclick="FILRemote.closeLife()" style="margin-top:12px">✕ ZAMKNIJ PANEL</button></div><p style="font-size:13px">Podczas koła ratunkowego korzystaj z panelu na telefonie. Pytanie jest widoczne na telewizorze.</p></div><p><a href="?" style="color:#ffdb4c">Wróć do gry</a></p></div>
+<div id="pilotApp" hidden><h1>🎮 FILIONERZY</h1><h2>📱 PILOT</h2><div id="pilotLogin"><p>Wpisz sześciocyfrowy kod z telewizora:</p><input id="pilotCode" inputmode="numeric" maxlength="6" placeholder="000000"><p><button onclick="FILRemote.joinPilot()">POŁĄCZ Z TV</button></p></div><div id="pilotStatus"></div><div id="pilotControls" hidden><div class="pilotGrid"><button onclick="FILRemote.send('A')">🅰️ A</button><button onclick="FILRemote.send('B')">🅱️ B</button><button onclick="FILRemote.send('C')">🇨 C</button><button onclick="FILRemote.send('D')">🇩 D</button></div><div style="margin:12px"><button id="pilotMicBtn" onclick="FILRemote.toggleMic()" style="width:90%;background:#20b66b;color:white;font-size:21px">🎤 WŁĄCZ MIKROFON</button><p id="pilotMicStatus" style="font-size:14px">Powiedz: odpowiedź A, B, C lub D</p></div><div class="pilotActions"><button onclick="FILRemote.send('CONFIRM')">✅ POTWIERDZAM</button><button onclick="FILRemote.send('CHANGE')">🔄 ZMIENIAM</button></div><h3>Koła ratunkowe</h3><div class="pilotActions"><button onclick="FILRemote.send('LIFELINE_5050')">💎 50:50</button><button onclick="FILRemote.openAudience()">👥 PUBLICZNOŚĆ</button><button onclick="FILRemote.openPhone()">📞 TELEFON</button></div><div id="pilotLifePanel" hidden style="margin:18px auto;padding:15px;max-width:560px;border:3px solid #ffdb4c;border-radius:15px;background:#241444"><h2 id="pilotLifeTitle"></h2><div id="pilotLifeBody"></div><button onclick="FILRemote.closeLife()" style="margin-top:12px">✕ ZAMKNIJ PANEL</button></div><p style="font-size:13px">Podczas koła ratunkowego korzystaj z panelu na telefonie. Pytanie jest widoczne na telewizorze.</p></div><p><a href="?" style="color:#ffdb4c">Wróć do gry</a></p></div>
 <script>
 (function(){
 const API='https://wphgyimjbnlnzhwpakmw.supabase.co/rest/v1/rpc/';
@@ -298,6 +298,7 @@ function connectLive(){
  try{liveSocket=new WebSocket(url)}catch(e){return}
  liveSocket.onopen=()=>{liveSocket.send(JSON.stringify({topic:'realtime:filionerzy_'+room,event:'phx_join',payload:{config:{broadcast:{self:false,ack:false},presence:{key:''}}},ref:String(++liveRef)}));};
  liveSocket.onmessage=(ev)=>{try{const m=JSON.parse(ev.data);if(m.event==='phx_reply'&&m.payload?.status==='ok')liveJoined=true;
+ if(m.event==='broadcast'&&m.payload?.event==='audience_open'&&pilot?.pilot_token){const d=m.payload.payload||{};window.FILRemote?.startAudienceFromTV(d.voters||[]);}
  if(m.event==='broadcast'&&m.payload?.event==='phone_open'&&pilot?.pilot_token){openPhone(false);message('pilotStatus','📞 Telewizor wybrał telefon do przyjaciela. Wybierz kontakt.');}
  if(m.event==='broadcast'&&m.payload?.event==='phone_pick'&&pilot?.pilot_token){const i=Number(m.payload.payload?.index);if(Number.isInteger(i)&&i>=0&&i<remoteFriends.length)callFriend(i);}
  }catch(e){}};
@@ -334,12 +335,13 @@ function phoneSettings(){const saved=getPhoneNumbers();lifePanel('📒 KSIĄŻKA
 function openPhone(notifyTV=true){if(notifyTV)send('LIFELINE_PHONE');const saved=getPhoneNumbers();lifePanel('📞 TELEFON DO PRZYJACIELA','<p>Wybierz osobę. Połączenie wykonasz z tego telefonu.</p>'+remoteFriends.map((n,i)=>'<button style="display:block;width:100%;margin:6px 0" onclick="FILRemote.callFriend('+i+')">📞 '+n+(saved[n]?' ✓':' — brak numeru')+'</button>').join('')+'<button onclick="FILRemote.phoneSettings()">⚙️ WPISZ / ZMIEŃ NUMERY</button>')}
 async function callFriend(i){const n=remoteFriends[i],number=String(getPhoneNumbers()[n]||'').replace(/[^+0-9]/g,'');if(!/^\+?\d{6,15}$/.test(number)){phoneSettings();message('pilotStatus','Najpierw wpisz numer osoby: '+n);return}await send('PHONE_PICK_'+i);lifePanel('📞 '+n,'<p>Dotknij przycisku, żeby otworzyć aplikację telefonu.</p><a style="display:block;padding:16px;background:#19844b;color:white;font-weight:bold;border-radius:12px;margin:12px" href="tel:'+number+'">📞 ZADZWOŃ</a><button onclick="FILRemote.startPhoneTimer()">▶ ROZMOWA ROZPOCZĘTA — 30 S</button><p>Po zakończeniu połączenia wróć do przeglądarki.</p>')}
 function startPhoneTimer(){send('PHONE_START');let sec=30;lifePanel('⏱️ CZAS ROZMOWY','<h1 id="phoneTimerMobile">00:30</h1><p>Połączenie odbywa się w aplikacji telefonu.</p>');const timer=setInterval(()=>{sec--;const t=el('phoneTimerMobile');if(!t){clearInterval(timer);return}t.textContent='00:'+String(Math.max(sec,0)).padStart(2,'0');if(sec<=0){clearInterval(timer);t.textContent='⏰ KONIEC CZASU'}},1000)}
-let voteStep=0;
+let voteStep=0, voteNames=[];
+function startAudienceFromTV(names){voteStep=0;voteNames=Array.isArray(names)?names:[];showVote()}
 function openAudience(){voteStep=0;send('LIFELINE_AUDIENCE');showVote()}
-function showVote(){lifePanel('👥 GŁOSOWANIE PUBLICZNOŚCI','<p>Głos '+(voteStep+1)+' z 4. Pytanie i odpowiedzi zobacz na telewizorze. Przekaż telefon głosującemu.</p><div class="pilotGrid">'+['A','B','C','D'].map((v,i)=>'<button onclick="FILRemote.castVote('+i+')">'+v+'</button>').join('')+'</div>')}
-async function castVote(i){await send('AUD_VOTE_'+i);voteStep++;if(voteStep<4){lifePanel('🔒 GŁOS ZAPISANY','<p>Nie pokazuj poprzedniej odpowiedzi. Przekaż telefon następnej osobie.</p><button onclick="FILRemote.nextVoter()">▶ NASTĘPNA OSOBA ('+(voteStep+1)+'/4)</button>')}else{lifePanel('📊 WYNIKI','<p>Wszystkie cztery głosy wysłane. Wyniki zostaną wyświetlone na telewizorze.</p>')}}
+function showVote(){lifePanel('👥 GŁOSOWANIE PUBLICZNOŚCI','<h2>🎮 '+(voteNames[voteStep]||'Głosujący '+(voteStep+1))+'</h2><p>Głos '+(voteStep+1)+' z '+(voteNames.length||4)+'. Wybierz odpowiedź. Pytanie zobacz na telewizorze.</p><div class="pilotGrid">'+['A','B','C','D'].map((v,i)=>'<button onclick="FILRemote.castVote('+i+')">'+v+'</button>').join('')+'</div>')}
+async function castVote(i){await send('AUD_VOTE_'+i);voteStep++;if(voteStep<(voteNames.length||4)){lifePanel('🔒 GŁOS ZAPISANY','<p>Nie pokazuj poprzedniej odpowiedzi. Przekaż telefon następnej osobie.</p><button onclick="FILRemote.nextVoter()">▶ NASTĘPNA OSOBA ('+(voteStep+1)+'/4)</button>')}else{lifePanel('📊 WYNIKI','<p>Wszystkie cztery głosy wysłane. Wyniki zostaną wyświetlone na telewizorze.</p>')}}
 function nextVoter(){send('AUD_NEXT');showVote()}
-window.FILRemote={toggleMic,broadcastToPilot,toggleHost:()=>el('remotePanel').hidden?showHost():hideHost(),hideHost,createHost,joinPilot,send,openPhone,phoneSettings,savePhoneNumbers,callFriend,startPhoneTimer,openAudience,castVote,nextVoter,closeLife};
+window.FILRemote={toggleMic,broadcastToPilot,toggleHost:()=>el('remotePanel').hidden?showHost():hideHost(),hideHost,createHost,joinPilot,send,openPhone,phoneSettings,savePhoneNumbers,callFriend,startPhoneTimer,openAudience,startAudienceFromTV,castVote,nextVoter,closeLife};
 if(new URLSearchParams(location.search).get('pilot')==='1'){el('pilotApp').hidden=false;el('remoteFab').hidden=true;el('pilotShortcut').hidden=true;pilot=load(pilotStore);if(pilot)startPilot()}else{host=load(hostStore);if(host){showHost();startHost()}}
 })();
 </script>
@@ -455,6 +457,41 @@ if(new URLSearchParams(location.search).get('pilot')==='1'){el('pilotApp').hidde
   if(typeof lifePhone==='function'&&!lifePhone.__filLinked){const old=lifePhone;const wrapped=function(...args){const result=old.apply(this,args);try{window.FILRemote?.broadcastToPilot('phone_open')}catch(e){}return result};wrapped.__filLinked=true;lifePhone=wrapped}
   if(typeof chooseFriend==='function'&&!chooseFriend.__filLinked){const old=chooseFriend;const wrapped=function(i,...args){const result=old.call(this,i,...args);try{window.FILRemote?.broadcastToPilot('phone_pick',{index:i})}catch(e){}return result};wrapped.__filLinked=true;chooseFriend=wrapped}
  };
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+})();
+</script>
+
+<script>
+/* FILIONERZY — głosowanie publiczności synchronizowane TV -> pilot */
+(function(){
+ function install(){
+  if(typeof lifeAudience!=='function'||lifeAudience.__audienceSync)return;
+  const previous=lifeAudience;
+  lifeAudience=function(...args){
+   const result=previous.apply(this,args);
+   if(typeof audienceState!=='undefined'&&audienceState){
+    const a=audienceState;
+    try{window.FILRemote?.broadcastToPilot('audience_open',{voters:a.voters})}catch(e){}
+    audienceVoteScreen=function(){
+     const state=audienceState;if(!state)return;
+     modal('<h2>👥 PUBLICZNOŚĆ GŁOSUJE</h2><p>Oddawanie głosów odbywa się na telefonie.</p><h2>Oddano '+state.votes.length+' z '+state.voters.length+' głosów</h2><p>Po zakończeniu pojawią się procentowe wyniki A, B, C i D.</p>');
+    };
+    audienceCast=function(choice){
+     const state=audienceState;
+     if(!state||!Number.isInteger(choice)||choice<0||choice>3||state.index>=state.voters.length)return;
+     state.votes.push(choice);state.index++;
+     if(state.index<state.voters.length){audienceVoteScreen();return}
+     game.lifelines[state.owner].audience=true;
+     const b=document.getElementById('lifeAudience');if(b){b.disabled=true;b.classList.add('used')}
+     modal('<h2>📊 PUBLICZNOŚĆ ZAGŁOSOWAŁA!</h2><p>Odkrywamy wyniki...</p>');
+     setTimeout(()=>{if(audienceState===state)audienceResults()},700);
+    };
+    audienceVoteScreen();
+   }
+   return result;
+  };
+  lifeAudience.__audienceSync=true;
+ }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();
 </script>
